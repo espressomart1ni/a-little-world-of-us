@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A Little World of Us</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div id="game"></div>
+
+  <div id="title-screen">
+    <div class="title-inner">
+      <div class="hearts">&#9829; &nbsp; &#9829; &nbsp; &#9829;</div>
+      <h1>A Little World<br />of Us</h1>
+      <p class="names">Yash &amp; Arkesha</p>
+      <p class="start">Press ENTER to begin</p>
+    </div>
+  </div>
+
+  <div id="controls" class="pixel-box hide">
+    <div><b>WASD</b> / <b>ARROWS</b> &nbsp;Walk</div>
+    <div><b>E</b> &nbsp;Look / Talk</div>
+  </div>
+
+  <div id="dialogue" class="pixel-box hide">
+    <div class="dlg-name"></div>
+    <div class="dlg-text"></div>
+    <div class="dlg-arrow">&#9660;</div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
