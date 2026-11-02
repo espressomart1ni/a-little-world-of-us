@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
-import { GAME_W, GAME_H } from './utils/isometric.js';
-import { BootScene } from './scenes/BootScene.js';
-import { RoomScene } from './scenes/RoomScene.js';
+import { GAME_W, GAME_H } from '../utils/isometric.js';
+import { BootScene } from '../scenes/BootScene.js';
+import { RoomScene } from '../scenes/RoomScene.js';
 
 export const createConfig = () => ({
   type: Phaser.AUTO,
