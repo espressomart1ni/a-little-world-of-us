@@ -3,7 +3,7 @@
 import { HW, HH, ROOM_SIZE, WALL_H, ORIGIN, GAME_W, GAME_H } from '../utils/isometric.js';
 
 const INK = '#2a1b26';
-export const CHARACTER_KEYS = ['yash', 'arkesha'];
+export const CHARACTER_KEYS = ['yash', 'arkisha'];
 export const CHAR_FRAME = { w: 18, h: 28 };
 
 /* ---------- helpers ---------- */
@@ -181,7 +181,7 @@ const STYLES = {
       R(4, 12 + t, 8, 1, '#365aa0'); R(6, 13 + t, 1, 3, '#f3efe6'); R(9, 13 + t, 1, 3, '#f3efe6'); R(5, 17 + t, 6, 2, '#365aa0');
     },
   },
-  arkesha: {
+  arkisha: {
     hair: '#4a2c2a', skin: '#f6d2b0', top: '#f4a6c0', bottom: '#f6d2b0', shoes: '#6b3f4a', skirt: '#7a5aa8', long: true,
     detail(R, t) { R(6, 12 + t, 4, 1, '#fff7ee'); R(8, 14 + t, 1, 1, '#fff7ee'); R(8, 16 + t, 1, 1, '#fff7ee'); },
     after(R, t) { R(10, 2 + t, 2, 1, '#ffd35a'); },
