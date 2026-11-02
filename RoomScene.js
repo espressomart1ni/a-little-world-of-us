@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { GAME_W, GAME_H, ROOM_SIZE } from '../utils/isometric.js';
 import { buildRoom } from '../objects/RoomObjects.js';
 import { Yash } from '../characters/Yash.js';
-import { Arkesha } from '../characters/Arkesha.js';
+import { Arkisha } from '../characters/Arkisha.js';
 import { InteractionSystem } from '../systems/InteractionSystem.js';
 import { DialogueBox } from '../ui/DialogueBox.js';
 
@@ -19,10 +19,10 @@ export class RoomScene extends Phaser.Scene {
     this.solids = room.solids;
 
     this.yash = new Yash(this, 4.6, 5.4);
-    this.arkesha = new Arkesha(this, 5.8, 3.0, this.yash);
-    this.solids.push(this.arkesha.solid);
+    this.Arkisha = new Arkisha(this, 5.8, 3.0, this.yash);
+    this.solids.push(this.Arkisha.solid);
 
-    this.interaction = new InteractionSystem(this, [...room.targets, this.arkesha.target], this.yash);
+    this.interaction = new InteractionSystem(this, [...room.targets, this.Arkisha.target], this.yash);
     this.dialogue = new DialogueBox();
 
     // cozy lighting: warm multiply tint + soft vignette
@@ -52,7 +52,7 @@ export class RoomScene extends Phaser.Scene {
     const dt = Math.min(delta / 1000, 0.05);
     const locked = !this.registry.get('started') || this.dialogue.isOpen;
     this.yash.update(dt, locked);
-    this.arkesha.update();
+    this.Arkisha.update();
     this.interaction.update(time, locked);
   }
 }
