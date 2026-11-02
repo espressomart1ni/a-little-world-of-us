@@ -11,7 +11,7 @@ export class Arkisha extends Character {
       get y0() { return me.gy - 0.3; }, get y1() { return me.gy + 0.3; },
     };
     this.target = {
-      id: 'arkesha', name: 'Arkisha', r: 1.3,
+      id: 'arkisha', name: 'Arkisha', r: 1.3,
       lines: ['Hi Yash! :)', '(Placeholder - a real conversation will live here in a later phase.)'],
       getPoints: () => [[me.gx, me.gy]],
       getMark: () => ({ gx: me.gx, gy: me.gy, z: 36 }),
