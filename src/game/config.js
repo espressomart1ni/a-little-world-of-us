@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { GAME_W, GAME_H } from '../utils/isometric.js';
 import { BootScene } from '../scenes/BootScene.js';
 import { RoomScene } from '../scenes/RoomScene.js';
+import { MonitorScene } from '../scenes/MonitorScene.js';
 
 export const createConfig = () => ({
   type: Phaser.AUTO,
@@ -13,5 +14,5 @@ export const createConfig = () => ({
   roundPixels: true,
   antialias: false,
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-  scene: [BootScene, RoomScene],
+  scene: [BootScene, RoomScene, MonitorScene],
 });

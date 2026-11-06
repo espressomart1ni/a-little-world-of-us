@@ -5,6 +5,7 @@ import { HW, HH, ROOM_SIZE, WALL_H, ORIGIN, GAME_W, GAME_H } from '../utils/isom
 const INK = '#2a1b26';
 export const CHARACTER_KEYS = ['yash', 'arkisha'];
 export const CHAR_FRAME = { w: 18, h: 28 };
+// Character sheet: 0-1 idle, 2-5 walk, 6-7 sit, 8-9 sit + eating (hand at mouth)
 
 /* ---------- helpers ---------- */
 const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
@@ -41,6 +42,14 @@ function finish(cv, { crisp = true, outline = INK } = {}) {
   tex.refresh();
 }
 
+// Pixel-map sprite: one character per pixel, '.' = empty. Canvas is (w+2) x (h+2) for the outline.
+function mkPixelMap(scene, key, rows, pal) {
+  const w = rows[0].length, h = rows.length;
+  const cv = newCanvas(scene, key, w + 2, h + 2); if (!cv) return;
+  rows.forEach((row, y) => [...row].forEach((ch, x) => { if (pal[ch]) rect(cv.c, pal[ch], x + 1, y + 1, 1, 1); }));
+  finish(cv);
+}
+
 const rect = (c, col, x, y, w, h) => { c.fillStyle = col; c.fillRect(x, y, w, h); };
 const disc = (c, col, x, y, r) => { c.fillStyle = col; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill(); };
 const poly = (c, pts, col) => {
@@ -63,6 +72,43 @@ const can = (c, P, x, y, z) => {
   box(c, P, x, y, z, 0.2, 0.2, 5, '#ece3f6');
   box(c, P, x - 0.01, y - 0.01, z + 1.5, 0.22, 0.22, 1, '#d8384a');
 };
+
+/* ---------- pizza box: lid angle (deg) + slices left (0-6) ---------- */
+const PZ_BASE = 1.5, PZ_LID = 8;
+
+function wedge(c, col, a0, a1, r) {
+  c.fillStyle = col; c.beginPath(); c.moveTo(0.5, 0.5); c.arc(0.5, 0.5, r, a0, a1); c.closePath(); c.fill();
+}
+
+function pizzaTop(c, P, n) {
+  topZ(c, P, PZ_BASE);
+  rect(c, '#b98c52', 0.06, 0.06, 0.88, 0.88);                 // cardboard floor
+  const seg = Math.PI / 3;
+  for (let i = 0; i < n; i++) {
+    const a0 = i * seg - 0.4, a1 = a0 + seg - 0.07, am = (a0 + a1) / 2;
+    wedge(c, '#e6b04c', a0, a1, 0.43); wedge(c, '#d4452f', a0, a1, 0.36); wedge(c, '#f6d36e', a0, a1, 0.32);
+    disc(c, '#b2262e', 0.5 + 0.2 * Math.cos(am), 0.5 + 0.2 * Math.sin(am), 0.065);
+  }
+  reset(c);
+}
+
+function drawPizza(c, P, deg, n) {
+  const base = () => box(c, P, 0, 0, 0, 1, 1, PZ_BASE, '#caa064');
+  if (deg === 0) {                                             // closed
+    base();
+    box(c, P, 0, 0, PZ_BASE, 1, 1, 0.9, '#e3b777');
+    topZ(c, P, PZ_BASE + 0.9); rect(c, '#d4452f', 0.38, 0.38, 0.24, 0.24); reset(c);
+    return;
+  }
+  const a = (deg * Math.PI) / 180, fy = Math.cos(a), fz = PZ_BASE + PZ_LID * Math.sin(a);
+  const lp = (u, v) => P(u, v * fy, PZ_BASE + v * (fz - PZ_BASE));   // point on the hinged lid
+  const lid = () => {
+    poly(c, [P(0, 0, PZ_BASE), P(1, 0, PZ_BASE), P(1, fy, fz), P(0, fy, fz)], '#f0cf98');
+    poly(c, [lp(0.35, 0.35), lp(0.65, 0.35), lp(0.65, 0.65), lp(0.35, 0.65)], '#d4452f');
+  };
+  if (deg >= 70) { lid(); base(); pizzaTop(c, P, n); }          // lid behind the box
+  else { base(); pizzaTop(c, P, n); lid(); }                    // lid in front, still covering
+}
 
 /* ---------- furniture specs: footprint (w,d tiles), height h (px), draw(c,P) ---------- */
 export const OBJECT_SPECS = {
@@ -119,15 +165,8 @@ export const OBJECT_SPECS = {
     reset(c);
     can(c, P, 0.2, 0.2, 28); can(c, P, 0.6, 0.25, 28); can(c, P, 0.4, 0.7, 28);
   } },
-  pizza: { w: 1, d: 1, h: 8, draw(c, P) {
-    box(c, P, 0, 0, 1.5, 1, 0.08, 5, '#d9aa6c');          // open lid
-    faceY(c, P, 0.08); rect(c, '#d4452f', 0.2, 3.5, 0.6, 1.2); reset(c);
-    box(c, P, 0, 0, 0, 1, 1, 1.5, '#caa064');
-    topZ(c, P, 1.5);
-    disc(c, '#e6b04c', 0.5, 0.5, 0.42); disc(c, '#d4452f', 0.5, 0.5, 0.34); disc(c, '#f6d36e', 0.5, 0.5, 0.3);
-    [[0.4, 0.4], [0.62, 0.45], [0.5, 0.64], [0.35, 0.6]].forEach(([x, y]) => disc(c, '#b2262e', x, y, 0.07));
-    reset(c);
-  } },
+  // Same footprint/size for every lid frame so the sprite can swap textures in place.
+  pizza: { w: 1, d: 1, h: 12, draw(c, P) { drawPizza(c, P, 0, 6); } },
 };
 
 export const objectSize = (s) => {
@@ -144,26 +183,56 @@ function mkObject(scene, key, spec) {
 }
 
 /* ---------- plushies ---------- */
+// Noah: round-eared bear, rosy cheeks, little nose, red scarf. 14x14.
+const NOAH = [
+  '..WW......WW..',
+  '.WWPW....WPWW.',
+  '.WWWWWWWWWWWS.',
+  '.WWWWWWWWWWWS.',
+  '.WWWKWWWWKWWS.',
+  '.WWWKWWWWKWWS.',
+  '.WBBWMKKMWBBS.',
+  '.WWWWKMMKWWWS.',
+  '.WWWWWKKWWWWS.',
+  '..RRRRRRRRRR..',
+  '.WWWWWWWWWWWS.',
+  '.WWWMMMMMMWWS.',
+  '..WWWMMMMWWS..',
+  '..WWWW..WWWW..',
+];
+const NOAH_PAL = { W: '#fbfbfb', S: '#dfe6ee', P: '#f4b6c4', K: INK, B: '#f7a8b8', M: '#eaf0f7', R: '#d84a58' };
+
+// Sky: pastel pink, gold horn, lilac mane + tail, three hearts. 14x18.
+const SKY = [
+  '......HH......',
+  '...PP.Hh.PP...',
+  '...PD.hH.DP...',
+  '..PPPLLLPPPP..',
+  '.LPPPPPPPPPPD.',
+  '.LPPKPPPPKPPD.',
+  '.LPPKPPPPKPPD.',
+  '.LPBBPPPPBBPD.',
+  '.LPPPPKKPPPPD.',
+  '.LPPPPPPPPPPD.',
+  '.LPRPRPPRPRPD.',
+  '.LPRRRPPRRRPLL',
+  '..PPRPPPPRPPLL',
+  '..PPPRPRPPPPLL',
+  '..PPPRRRPPPPLL',
+  '..PPPPRPPPPPD.',
+  '..PPP....PPP..',
+  '..HHH....HHH..',
+];
+const SKY_PAL = { P: '#f6b6d2', D: '#e79cc0', L: '#c9a0ec', H: '#ffe27a', h: '#f2c14e', K: INK, B: '#ff8fb0', R: '#ff4f86' };
+
 function mkPlush(scene, key, w, h, draw) {
   const cv = newCanvas(scene, key, w + 2, h + 2); if (!cv) return;
   draw((x, y, ww, hh, col) => rect(cv.c, col, x + 1, y + 1, ww, hh));
   finish(cv);
 }
 function plushies(scene) {
-  const W = '#fbfbfb', PINK = '#f6b6d2', LIL = '#c9a0ec';
-  mkPlush(scene, 'noah', 14, 14, (R) => {
-    R(2, 0, 3, 3, W); R(9, 0, 3, 3, W); R(3, 1, 1, 1, '#f4b6c4'); R(10, 1, 1, 1, '#f4b6c4');
-    R(3, 1, 8, 6, W); R(2, 7, 10, 6, W); R(1, 8, 2, 4, W); R(11, 8, 2, 4, W); R(3, 12, 3, 2, W); R(8, 12, 3, 2, W);
-    R(11, 8, 1, 5, '#dfe6ee'); R(10, 2, 1, 4, '#dfe6ee'); R(5, 5, 4, 2, '#eef1f6');
-    R(5, 3, 1, 2, INK); R(8, 3, 1, 2, INK); R(6, 5, 2, 1, INK); R(3, 7, 8, 1, '#d84a58');
-  });
-  mkPlush(scene, 'unicorn', 14, 18, (R) => {
-    R(6, 0, 2, 3, '#ffe27a'); R(6, 1, 2, 1, '#f2c14e');
-    R(3, 3, 2, 2, PINK); R(9, 3, 2, 2, PINK); R(3, 3, 8, 6, PINK); R(2, 4, 2, 8, LIL);
-    R(2, 9, 10, 6, PINK); R(3, 15, 3, 2, PINK); R(8, 15, 3, 2, PINK); R(11, 9, 1, 6, '#e79cc0'); R(12, 10, 2, 4, LIL);
-    R(5, 5, 1, 2, INK); R(8, 5, 1, 2, INK); R(4, 7, 2, 1, '#ff8fb0'); R(9, 7, 2, 1, '#ff8fb0');
-    [3, 6, 9].forEach((x) => { R(x, 10, 1, 1, '#ff4f86'); R(x + 2, 10, 1, 1, '#ff4f86'); R(x, 11, 3, 1, '#ff4f86'); R(x + 1, 12, 1, 1, '#ff4f86'); });
-  });
+  mkPixelMap(scene, 'noah', NOAH, NOAH_PAL);
+  mkPixelMap(scene, 'unicorn', SKY, SKY_PAL);
   mkPlush(scene, 'frog', 10, 9, (R) => {
     R(1, 2, 8, 6, '#7fd08a'); R(1, 0, 3, 3, '#7fd08a'); R(6, 0, 3, 3, '#7fd08a'); R(2, 1, 1, 1, INK); R(7, 1, 1, 1, INK);
     R(3, 5, 4, 1, '#f3a3b3'); R(2, 7, 2, 2, '#6bb877'); R(6, 7, 2, 2, '#6bb877');
@@ -173,7 +242,16 @@ function plushies(scene) {
   });
 }
 
-/* ---------- characters: 6 frames (0-1 idle, 2-5 walk), 18x28 each ---------- */
+/* ---------- pizza slice, 4 states: whole, 2/3, 1/3, crust ---------- */
+const SLICE_PAL = { C: '#d9a24a', Y: '#f6d36e', R: '#c9362e' };
+const SLICES = [
+  ['CCCCCCC', 'YYRYYRY', '.YYYRY.', '.YRYYY.', '..YYY..', '...Y...'],
+  ['CCCCCCC', 'YYRYYRY', '.YYYRY.', '.YRYYY.'],
+  ['CCCCCCC', 'YYRYYRY'],
+  ['CCCCCCC'],
+];
+
+/* ---------- characters: 10 frames, 18x28 each ---------- */
 const STYLES = {
   yash: {
     hair: '#2f2a3a', skin: '#f2c9a0', top: '#4a7bd0', bottom: '#3b4468', shoes: '#f3efe6', spiky: true,
@@ -210,10 +288,33 @@ function drawChar(c, ox, f, s) {
   s.after && s.after(R, t);
 }
 
+// Seated: hips at row 18 = 9px above the feet line, which matches the chair seat height.
+// Frames 6/7 rest (breathing), 8/9 eating (right hand raised to the mouth, head bobs on 9).
+function drawSeated(c, ox, f, s) {
+  const eat = f >= 8, t = f % 2;
+  const R = (x, y, w, h, col) => rect(c, col, ox + 1 + x, y, w, h);
+  if (s.long) R(3, 3 + t, 10, 13, s.hair);
+  R(5, 18, 9, 2, s.bottom);                                       // thighs
+  R(8, 20, 2, 5, shade(s.bottom, 0.8)); R(8, 25, 3, 2, s.shoes);  // far shin
+  R(11, 20, 3, 5, s.bottom); R(11, 25, 4, 2, s.shoes);            // near shin
+  R(4, 12 + t, 8, 6 - t, s.top); R(2, 13 + t, 2, 4, s.top); R(2, 17, 2, 1, s.skin);
+  if (!eat) { R(12, 13 + t, 2, 4, s.top); R(12, 17, 2, 1, s.skin); }
+  if (s.skirt) R(3, 17, 10, 3, s.skirt);
+  s.detail(R, t);
+  R(4, 5 + t, 8, 7, s.skin);
+  R(3, 1 + t, 10, 5, s.hair); R(3, 5 + t, 1, 4, s.hair); R(12, 5 + t, 1, 4, s.hair); R(4, 5 + t, 8, 1, s.hair);
+  if (s.spiky) { R(5, 0 + t, 2, 1, s.hair); R(8, 0 + t, 3, 1, s.hair); }
+  R(5, 8 + t, 2, 2, INK); R(9, 8 + t, 2, 2, INK); R(5, 8 + t, 1, 1, '#ffffff'); R(9, 8 + t, 1, 1, '#ffffff');
+  R(4, 10 + t, 2, 1, '#f08a9a'); R(10, 10 + t, 2, 1, '#f08a9a'); R(7, 11 + t, 2, 1, '#b5675f');
+  if (s.long) { R(3, 12 + t, 2, 5, s.hair); R(11, 12 + t, 2, 5, s.hair); }
+  s.after && s.after(R, t);
+  if (eat) { R(12, 13 + t, 2, 2, s.top); R(11, 11 + t, 2, 3, s.top); R(10, 9 + t, 3, 2, s.skin); }
+}
+
 function mkCharacter(scene, key, style) {
-  const N = 6, { w, h } = CHAR_FRAME;
+  const N = 10, { w, h } = CHAR_FRAME;
   const cv = newCanvas(scene, key, w * N, h); if (!cv) return;
-  for (let f = 0; f < N; f++) drawChar(cv.c, f * w, f, style);
+  for (let f = 0; f < N; f++) (f < 6 ? drawChar : drawSeated)(cv.c, f * w, f, style);
   finish(cv);
   for (let f = 0; f < N; f++) cv.tex.add(f, 0, f * w, 0, w, h);
 }
@@ -318,7 +419,13 @@ function mkUi(scene) {
 export function generateAllTextures(scene) {
   mkRoom(scene);
   Object.entries(OBJECT_SPECS).forEach(([k, s]) => mkObject(scene, k, s));
+  // pizza box: lid opening frames, then the open box with 6..0 slices left
+  [15, 35, 55, 75].forEach((deg, i) =>
+    mkObject(scene, `pizza-lid-${i + 1}`, { ...OBJECT_SPECS.pizza, draw: (c, P) => drawPizza(c, P, deg, 6) }));
+  for (let n = 6; n >= 0; n--)
+    mkObject(scene, `pizza-open-${n}`, { ...OBJECT_SPECS.pizza, draw: (c, P) => drawPizza(c, P, 95, n) });
   plushies(scene);
+  SLICES.forEach((rows, i) => mkPixelMap(scene, `slice-${i + 1}`, rows, SLICE_PAL));
   CHARACTER_KEYS.forEach((k) => mkCharacter(scene, k, STYLES[k]));
   mkUi(scene);
 }

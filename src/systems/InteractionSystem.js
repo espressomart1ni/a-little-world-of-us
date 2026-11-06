@@ -13,7 +13,8 @@ export class InteractionSystem {
       for (const t of this.targets)
         for (const [x, y] of t.getPoints()) {
           const d = Math.hypot(x - this.player.gx, y - this.player.gy);
-          if (d < t.r && d < bestD) { bestD = d; best = t; }
+          const score = d - (t.priority || 0);
+          if (d < t.r && score < bestD) { bestD = score; best = t; }
         }
     }
     this.current = best;

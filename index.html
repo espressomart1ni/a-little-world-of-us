@@ -29,7 +29,14 @@
 
   <div id="controls" class="pixel-box hide">
     <div><b>WASD</b> / <b>ARROWS</b> &nbsp;Walk</div>
-    <div><b>E</b> &nbsp;Look / Talk</div>
+    <div><b>E</b> / <b>CLICK</b> &nbsp;Look / Talk</div>
+    <div><b>M</b> &nbsp;Mute</div>
+  </div>
+
+  <div id="audio-panel" class="pixel-box hide">
+    <button id="btn-mute" class="px-btn" type="button">MUTE</button>
+    <label>MUSIC <input id="vol-music" type="range" min="0" max="100" value="60" /></label>
+    <label>SFX <input id="vol-sfx" type="range" min="0" max="100" value="80" /></label>
   </div>
 
   <div id="dialogue" class="pixel-box hide">
@@ -37,6 +44,9 @@
     <div class="dlg-text"></div>
     <div class="dlg-arrow">&#9660;</div>
   </div>
+
+  <div id="choices" class="pixel-box hide"></div>
+  <div id="caption" class="hide"></div>
 
   <script type="module" src="./src/main.js"></script>
 </body>
