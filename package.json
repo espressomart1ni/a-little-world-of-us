@@ -1,0 +1,22 @@
+{
+  "name": "a-little-world-of-us",
+  "version": "1.0.0",
+  "description": "A Little World of Us",
+  "author": "Yash",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "app": "vite build && electron .",
+    "dist": "vite build && electron-builder"
+  },
+  "build": {
+    "directories": { "output": "release" },
+    "appId": "com.yash.alittleworldofus",
+    "productName": "A Little World of Us",
+    "files": ["dist/**/*", "electron/**/*"],
+    "win": { "target": "nsis" },
+    "mac": { "target": "dmg" },
+    "linux": { "target": "AppImage" }
+  }
+}
